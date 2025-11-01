@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charet="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC 视频通话工具 - PeerJS版本</title>
+    <tyle>
+        * {
+            margin: 0;
+            padding: 0;
+            box-izing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+            diplay: flex;
+            flex-direction: column;
+            align-item: center;
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            border-radiu: 20px;
+            padding: 30px;
+            box-hadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            margin-top: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-ize: 2.5rem;
+            margin-bottom: 10px;
+            text-hadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .ubtitle {
+            font-ize: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .connection-panel {
+            diplay: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+            background: rgba(30, 30, 50, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+        }
+        
+        .connection-box {
+            flex: 1;
+            min-width: 250px;
+        }
+        
+        .connection-box h3 {
+            margin-bottom: 15px;
+            color: #21CBF3;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+        }
+        
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .video-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .video-box {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(30, 30, 50, 0.8);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .video-title {
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        video {
+            width: 100%;
+            height: 300px;
+            background: #000;
+            display: block;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+        
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(45deg, #2196F3, #21CBF3);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        button.primary {
+            background: linear-gradient(45deg, #4CAF50, #8BC34A);
+        }
+        
+        button.danger {
+            background: linear-gradient(45deg, #f44336, #e91e63);
+        }
+        
+        button.secondary {
+            background: linear-gradient(45deg, #FF9800, #FF5722);
+        }
+        
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+        
+        .call-options {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .call-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            width: 150px;
+        }
+        
+        .call-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .call-option.active {
+            background: rgba(33, 150, 243, 0.3);
+            border: 2px solid #2196F3;
+        }
+        
+        .icon {
+            font-size: 2rem;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .video-container {
+                flex-direction: column;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .connection-panel {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>WebRTC 视频通话工具</h1>
+        <p class="subtitle">基于PeerJS的实时音视频通信 - 无需后端部署</p>
+    </header>
+    
+    <div class="container">
+        <div class="status" id="status">
+            准备连接，请选择通话类型并创建或加入房间
+        </div>
+        
+        <div class="call-options">
+            <div class="call-option active" id="videoOption">
+                <div class="icon">📹</div>
+                <div>视频通话</div>
+            </div>
+            <div class="call-option" id="audioOption">
+                <div class="icon">🎙️</div>
+                <div>语音通话</div>
+            </div>
+        </div>
+        
+        <div class="connection-panel">
+            <div class="connection-box">
+                <h3>创建房间</h3>
+                <input type="text" id="createRoomInput" placeholder="输入房间名称">
+                <button id="createRoomBtn" class="primary">创建房间</button>
+            </div>
+            
+            <div class="connection-box">
+                <h3>加入房间</h3>
+                <input type="text" id="joinRoomInput" placeholder="输入房间ID">
+                <button id="joinRoomBtn" class="primary">加入房间</button>
+            </div>
+        </div>
+        
+        <div class="video-container">
+            <div class="video-box">
+                <div class="video-title">本地视频</div>
+                <video id="localVideo" autoplay muted></video>
+            </div>
+            <div class="video-box">
+                <div class="video-title">远程视频</div>
+                <video id="remoteVideo" autoplay></video>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="startBtn" class="primary">
+                <span>▶️</span> 开始通话
+            </button>
+            <button id="hangupBtn" class="danger" disabled>
+                <span>📵</span> 挂断通话
+            </button>
+            <button id="muteBtn" class="secondary">
+                <span>🔇</span> 静音
+            </button>
+            <button id="videoBtn" class="secondary">
+                <span>📹</span> 关闭视频
+            </button>
+        </div>
+        
+        <div class="connection-info">
+            <div class="info-box">
+                <h3>连接信息</h3>
+                <p>房间ID: <span id="roomId">未加入房间</span></p>
+                <p>连接状态: <span id="connectionStatus">未连接</span></p>
+                <p>我的ID: <span id="myId">未连接</span></p>
+            </div>
+            <div class="info-box">
+                <h3>使用说明</h3>
+                <p>1. 选择通话类型（视频/语音）</p>
+                <p>2. 创建房间或加入已有房间</p>
+                <p>3. 点击"开始通话"获取本地媒体</p>
+                <p>4. 等待对方加入房间</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入PeerJS库 -->
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script>
+        // 获取DOM元素
+        const localVideo = document.getElementById('localVideo');
+        const remoteVideo = document.getElementById('remoteVideo');
+        const startBtn = document.getElementById('startBtn');
+        const hangupBtn = document.getElementById('hangupBtn');
+        const muteBtn = document.getElementById('muteBtn');
+        const videoBtn = document.getElementById('videoBtn');
+        const statusDiv = document.getElementById('status');
+        const roomIdSpan = document.getElementById('roomId');
+        const connectionStatusSpan = document.getElementById('connectionStatus');
+        const myIdSpan = document.getElementById('myId');
+        const videoOption = document.getElementById('videoOption');
+        const audioOption = document.getElementById('audioOption');
+        const createRoomInput = document.getElementById('createRoomInput');
+        const createRoomBtn = document.getElementById('createRoomBtn');
+        const joinRoomInput = document.getElementById('joinRoomInput');
+        const joinRoomBtn = document.getElementById('joinRoomBtn');
+        
+        // 状态变量
+        let localStream = null;
+        let remoteStream = null;
+        let isMuted = false;
+        let isVideoOff = false;
+        let isVideoCall = true;
+        let currentRoomId = null;
+        let peer = null;
+        let currentCall = null;
+        
+        // 选择通话类型
+        videoOption.addEventListener('click', () => {
+            videoOption.classList.add('active');
+            audioOption.classList.remove('active');
+            isVideoCall = true;
+            updateStatus("已选择视频通话");
+        });
+        
+        audioOption.addEventListener('click', () => {
+            audioOption.classList.add('active');
+            videoOption.classList.remove('active');
+            isVideoCall = false;
+            updateStatus("已选择语音通话");
+        });
+        
+        // 创建房间
+        createRoomBtn.addEventListener('click', () => {
+            const roomId = createRoomInput.value.trim();
+            if (!roomId) {
+                alert("请输入房间名称");
+                return;
+            }
+            
+            joinRoom(roomId);
+        });
+        
+        // 加入房间
+        joinRoomBtn.addEventListener('click', () => {
+            const roomId = joinRoomInput.value.trim();
+            if (!roomId) {
+                alert("请输入房间ID");
+                return;
+            }
+            
+            joinRoom(roomId);
+        });
+        
+        // 加入房间函数
+        function joinRoom(roomId) {
+            // 如果已经连接，先断开
+            if (peer) {
+                peer.destroy();
+            }
+            
+            // 创建Peer实例
+            // 使用PeerJS的公共服务器
+            peer = new Peer({
+                host: '0.peerjs.com',
+                port: 443,
+                path: '/',
+                secure: true,
+                debug: 3
+            });
+            
+            peer.on('open', (id) => {
+                updateStatus("已连接到信令服务器");
+                myIdSpan.textContent = id;
+                currentRoomId = roomId;
+                roomIdSpan.textContent = roomId;
+                
+                updateStatus(`已加入房间: ${roomId}，我的ID: ${id}`);
+                
+                // 启用开始通话按钮
+                startBtn.disabled = false;
+            });
+            
+            // 监听来电
+            peer.on('call', (call) => {
+                updateStatus(`收到来自 ${call.peer} 的通话请求`);
+                
+                // 如果有本地流，直接应答
+                if (localStream) {
+                    answerCall(call);
+                } else {
+                    // 否则先获取媒体设备，然后应答
+                    getMediaStream().then(() => {
+                        answerCall(call);
+                    });
+                }
+            });
+            
+            // 监听连接断开
+            peer.on('disconnected', () => {
+                updateStatus("与信令服务器断开连接");
+                connectionStatusSpan.textContent = "断开连接";
+            });
+            
+            // 监听错误
+            peer.on('error', (err) => {
+                console.error("PeerJS错误:", err);
+                updateStatus("连接错误: " + err.type);
+            });
+            
+            // 监听连接关闭
+            peer.on('close', () => {
+                updateStatus("连接已关闭");
+                connectionStatusSpan.textContent = "已关闭";
+            });
+        }
+        
+        // 开始通话按钮点击事件
+        startBtn.addEventListener('click', startCall);
+        
+        // 挂断按钮点击事件
+        hangupBtn.addEventListener('click', hangUp);
+        
+        // 静音按钮点击事件
+        muteBtn.addEventListener('click', toggleMute);
+        
+        // 视频按钮点击事件
+        videoBtn.addEventListener('click', toggleVideo);
+        
+        // 更新状态显示
+        function updateStatus(message) {
+            statusDiv.textContent = message;
+            console.log(message);
+        }
+        
+        // 获取媒体流
+        async function getMediaStream() {
+            try {
+                // 根据选择的通话类型请求媒体流
+                const constraints = {
+                    audio: true,
+                    video: isVideoCall
+                };
+                
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                localVideo.srcObject = localStream;
+                
+                updateStatus("媒体设备已就绪");
+                return localStream;
+            } catch (error) {
+                console.error("获取媒体设备失败:", error);
+                updateStatus("获取媒体设备失败: " + error.message);
+                throw error;
+            }
+        }
+        
+        // 开始通话
+        async function startCall() {
+            updateStatus("正在获取媒体设备权限...");
+            
+            try {
+                await getMediaStream();
+                
+                updateStatus("正在呼叫对方...");
+                startBtn.disabled = true;
+                hangupBtn.disabled = false;
+                
+                // 呼叫房间内的其他用户
+                // 注意：PeerJS没有内置的房间概念，所以我们需要假设对方知道我们的ID
+                // 在实际应用中，您需要实现自己的房间管理逻辑
+                // 这里我们假设对方ID与房间ID相同（简化实现）
+                currentCall = peer.call(currentRoomId, localStream);
+                
+                currentCall.on('stream', (remoteStream) => {
+                    remoteVideo.srcObject = remoteStream;
+                    updateStatus("通话已连接");
+                    connectionStatusSpan.textContent = "已连接";
+                });
+                
+                currentCall.on('close', () => {
+                    updateStatus("通话已结束");
+                    hangUp();
+                });
+                
+                currentCall.on('error', (err) => {
+                    console.error("通话错误:", err);
+                    updateStatus("通话错误: " + err.message);
+                    hangUp();
+                });
+                
+            } catch (error) {
+                console.error("开始通话失败:", error);
+                updateStatus("开始通话失败: " + error.message);
+            }
+        }
+        
+        // 应答来电
+        function answerCall(call) {
+            updateStatus("正在应答通话...");
+            currentCall = call;
+            
+            call.answer(localStream);
+            
+            call.on('stream', (remoteStream) => {
+                remoteVideo.srcObject = remoteStream;
+                updateStatus("通话已连接");
+                connectionStatusSpan.textContent = "已连接";
+                hangupBtn.disabled = false;
+            });
+            
+            call.on('close', () => {
+                updateStatus("通话已结束");
+                hangUp();
+            });
+            
+            call.on('error', (err) => {
+                console.error("通话错误:", err);
+                updateStatus("通话错误: " + err.message);
+                hangUp();
+            });
+        }
+        
+        // 挂断通话
+        function hangUp() {
+            updateStatus("通话结束");
+            
+            if (currentCall) {
+                currentCall.close();
+                currentCall = null;
+            }
+            
+            if (localStream) {
+                localStream.getTrack().forEach(track => track.stop());
+                localStream = null;
+            }
+            
+            localVideo.rcObject = null;
+            remoteVideo.rcObject = null;
+            
+tartBtn.diabled = true;
+            hangupBtn.diabled = true;
+            
+            roomIdSpan.textContent = "未加入房间";
+            connectionStatuSpan.textContent = "未连接";
+            
+            // 重置状态
+            currentRoomId = null;
+        }
+        
+        // 切换静音
+        function toggleMute() {
+            if (!localStream) return;
+            
+            cont audioTrack = localStream.getAudioTracks();
+            if (audioTrack.length === 0) return;
+            
+            iMuted = !isMuted;
+            audioTrack[0].enabled = !isMuted;
+            
+            muteBtn.innerHTML = isMuted ? '<span>🔊</span> 取消静音' : '<span>🔇</span> 静音';
+            updateStatu(iMuted ? "已静音" : "已取消静音");
+        }
+        
+        // 切换视频
+        function toggleVideo() {
+            if (!localStream || !iVideoCall) return;
+            
+            cont videoTrack = localStream.getVideoTracks();
+            if (videoTrack.length === 0) return;
+            
+            iVideoOff = !isVideoOff;
+            videoTrack[0].enabled = !isVideoOff;
+            
+            videoBtn.innerHTML = isVideoOff ? '<span>📹</span> 开启视频' : '<span>🚫</span> 关闭视频';
+            updateStatu(iVideoOff ? "视频已关闭" : "视频已开启");
+        }
+    </cript>
+</body>
+</html>
